@@ -1,0 +1,21 @@
+.page{
+	text-align: center;    
+    margin: 0px auto;
+    position: relative;
+    bottom: -30px;
+    width: 100%;
+}
+
+.search{
+	height:60px;
+}
+
+.middle{
+	margin: 15px auto;
+}
+
+.logon-m{
+	width: 100%;
+	text-align: center; 
+	margin: 0px auto;
+}

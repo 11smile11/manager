@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.userdao.DaoMapper">
+  <cache type="com.redis.RedisCache"/>
+  
+  <resultMap id="adminBaseResultMap" type="com.entity.Admin">
+		<id column="aname" property="aname" />
+		<result column="apasswd" property="apasswd" />
+		<result column="adate" property="adate" />
+	</resultMap>
+  <!-- 一对多映射user————video -->
+  <resultMap id="BaseResultMap" type="com.entity.User">
+		<id column="uname" property="uname" />
+		<result column="passwd" property="passwd" />
+		<result column="date" property="date" />
+		<result column="status" property="status" />
+		<collection property="video" resultMap="videoBaseResultMap" column="vuname" > 
+		</collection>
+	</resultMap>
+	<!-- video基本数据映射表-->
+	<resultMap id="videoBaseResultMap" type="com.entity.Video">
+		<id column="vid" property="vid" />
+		<result column="vuname" property="vuname" />
+		<result column="vname" property="vname" />
+		<result column="vdata" property="vdata" />
+		<result column="url" property="url" />
+		<result column="vnumber" property="vnumber" />
+		<result column="status" property="status" />
+		<result column="image" property="image" />
+		<association property="user" resultMap="BaseResultMap" /> 
+	</resultMap>
+	
+	
+	<!--我笑了 获取管理员信息 -->
+  <select id="findAlladmin" resultMap="adminBaseResultMap" >
+  select * from dmin;
+  </select>
+  
+   <!-- 按照名字管理员信息 -->
+  <select id="findAdminByname" resultMap="adminBaseResultMap" parameterType="String" >
+  select * from dmin where aname=#{aname}
+ 
+  </select>
+   <!-- 获取模糊管理员信息 -->
+  <select id="Adminsearch" resultMap="adminBaseResultMap" parameterType="String" >
+  select * from dmin where aname LIKE "%"#{aname}"%";
+  </select>
+  
+  <!-- 添加管理员 -->
+  <insert id="insrtAdminByname"  >
+  insert into dmin(aname,apasswd) values(#{aname},#{apasswd});
+  </insert>
+  
+  <!-- 删除管理员 -->
+  <delete id="deladmin"  parameterType="String">
+  DELETE FROM dmin WHERE aname=#{aname};
+  </delete>
+  
+  <!-- 修改管理员的密码 -->
+  <update id="updateAdminPasswd">
+  update dmin set apasswd=#{apasswd} where aname=#{aname};
+  </update>
+  
+  
+  
+  <!-- 查询用户信息 -->
+  <select id="findAllusr" resultMap="BaseResultMap" >
+  select * from user;
+  </select>
+  
+  <!-- 模糊搜索用户信息 -->
+  <select id="findusrByname" resultMap="BaseResultMap" parameterType="String" >
+  SELECT * FROM user WHERE uname LIKE "%"#{uname}"%"
+   <if test="status !='' and status != null">
+		 and status = #{status}
+		</if>
+  </select>
+  
+   <!-- 模糊搜索用户信息 -->
+  <select id="findusrByname1" resultMap="BaseResultMap" parameterType="String" >
+  SELECT * FROM user WHERE uname ==#{uname};
+  </select>
+  
+  <!-- 修改用户状态 -->
+  <update id="updateuser">
+  update user set status=#{status} where uname=#{uname};
+  </update>
+  
+   <!-- 关联查询用户信息 -->
+  <select id="userAndviewlist" resultMap="videoBaseResultMap" >
+  SELECT u.* ,v.* FROM video v inner join user u on v.vuname=u.uname WHERE v.vuname LIKE "%"#{vuname}"%";
+  </select>
+  
+  <!-- 查询视频信息 -->
+  <select id="findAllVideo" resultMap="videoBaseResultMap">
+  SELECT * FROM video;
+  </select>
+  <!-- 按照视频编号搜索 -->
+  <select id="findVideoByid" resultMap="videoBaseResultMap">
+  SELECT * FROM video WHERE 1=1
+  		<if test="status !='' and status != null">
+		 and status  = #{status}
+		</if>
+		<if test="vid !='' and vid != null">
+		 and vid = #{vid}
+		</if>
+  </select>
+  <!-- 删除按照视频编号 -->
+  <delete id="deVideoByid"  parameterType="Integer">
+  DELETE FROM video WHERE vid=#{vid};
+  </delete>
+  
+  
+  <!-- 公告查询管理 -->
+ <select id="gonggao1" resultType="com.entity.Teams" parameterType="Integer">
+  select * from items where id=#{id};
+  </select>
+   <!-- 举报管理 -->
+  <select id="gonggao2" resultType="com.entity.Teams">
+  select * from items where manage=#{manage} and title like "%"#{title}"%"
+   <if test="status !=0 and status != null">
+		 and status = #{status}
+		</if>
+  </select>
+   <!-- 公告删除 -->
+  <delete id="gonggao3" parameterType="Integer">
+  delete from items where id=#{id};
+  </delete>
+   <!-- 公告发布 -->
+  <insert id="gonggao4" parameterType="String">
+  insert into items(title,name,detail,manage,oper) values (#{title},#{name},#{detail},"admin",#{oper});
+  </insert>
+  <!-- 申请状态修改 -->
+  <update id="gonggao5">
+  update items set status=#{status} where id=#{id}
+  </update>
+  </mapper>

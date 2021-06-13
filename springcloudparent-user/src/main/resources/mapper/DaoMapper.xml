@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.userdao.UserDaoMapper">
+  <cache type="com.redis.RedisCache"/>
+  <!-- 公告表 -->
+  <resultMap id="teamsBaseResultMap" type="com.entity.Teams">
+		<id column="id" property="id" />
+		<result column="detail" property="detail" />
+		<result column="name" property="name" />
+		<result column="title" property="title" />
+		<result column="manage" property="manage" />
+		<result column="oper" property="oper" />
+		<result column="status" property="status" />
+	</resultMap>
+	
+	<!-- 操作记录 -->
+	<resultMap id="operateBaseResultMap" type="com.entity.Operate">
+		<id column="vid" property="vid" />
+		<id column="uname" property="uname" />
+		<result column="ulike" property="ulike" />
+		<result column="oper" property="oper" />
+		<association property="video" resultMap="videoBaseResultMap" />
+	</resultMap>
+	
+  <!-- 一对多映射user————video -->
+  <resultMap id="BaseResultMap" type="com.entity.User">
+		<id column="uname" property="uname" />
+		<result column="passwd" property="passwd" />
+		<result column="date" property="date" />
+		<result column="status" property="status" />
+		<collection property="video" resultMap="videoBaseResultMap" column="vuname" > 
+		</collection>
+	</resultMap>
+	<!-- video基本数据映射表-->
+	<resultMap id="videoBaseResultMap" type="com.entity.Video">
+		<id column="vid" property="vid" />
+		<result column="vuname" property="vuname" />
+		<result column="vname" property="vname" />
+		<result column="vdata" property="vdata" />
+		<result column="url" property="url" />
+		<result column="status" property="status" />
+		<result column="vnumber" property="vnumber" />
+		<result column="image" property="image" />
+		<association property="user" resultMap="BaseResultMap" /> 
+	</resultMap>
+	
+	 <!-- 一对多用户信息 -->
+  <select id="userOfviewlist" resultMap="BaseResultMap" >
+  SELECT u.* ,v.* FROM user u inner join video v on v.vuname=u.uname WHERE u.uname=#{uname}
+  <if test="status !='' and status != null">
+		 and v.status=#{status};
+		</if>
+  </select>
+  <!-- 下架视频 -->
+  <update id="userdel">
+  update video set status=#{status} where vid=#{vid};
+  </update>
+   <!-- 获取视频地址 -->
+  <select id="videourl" resultMap="videoBaseResultMap" parameterType="Integer" >
+  select url from video where vid=#{vid};
+  </select>
+  <!-- 修改密码 -->
+  <update id="updateUserPasswd">
+  update user set passwd=#{passwd} where uname=#{uname};
+  </update>
+   <!-- 登录和注册查询 -->
+  <select id="findUserByname" resultMap="BaseResultMap" parameterType="String" >
+  select * from user where uname=#{uname};
+  </select>
+   <!-- 用户注册 -->
+  <insert id="UserInsert">
+  insert into user(uname,passwd) values(#{uname},#{passwd});
+  </insert>
+  
+  <!-- 查询有效视频信息 -->
+  <select id="listVideo" resultMap="videoBaseResultMap" resultType="com.entity.Video">
+  SELECT * FROM video WHERE status=1;
+  </select>
+   <!-- 模糊搜索视频 -->
+  <select id="searchVideo" resultMap="videoBaseResultMap" parameterType="String" >
+  SELECT * FROM video WHERE status=1 and vname LIKE "%"#{vname}"%";
+  </select>
+   <!-- 上传视频记录 -->
+  <insert id="uploadVideo">
+  insert into video(vuname,vname,url,image) values(#{vuname},#{vname},#{url},#{image});
+  </insert>
+   <!-- 判断视频标题是否存在 -->
+  <select id="ifvnamenull" resultType="String">
+  select vname from video where vname=#{vname};
+  </select>
+  
+  
+   <!-- 判断用户的点赞和收藏状态 -->
+  <select id="beanlike" resultMap="operateBaseResultMap">
+  select * from operate where vid=#{vid} and uname=#{uname} and oper=#{oper};
+  </select>
+   <!-- 记录用户点赞和收藏数 -->
+  <insert id="recordOper">
+  insert into operate(vid,uname,ulike,oper) values(#{vid},#{uname},#{ulike},#{oper});
+  </insert>
+   <!-- 取消用户点赞和收藏数 -->
+  <delete id="cancelOper">
+  delete from operate where vid=#{vid} and uname=#{uname} and oper=#{oper};
+  </delete>
+  <!-- 查询用户点赞和收藏数 -->
+  <select id="numberOper" resultType="Integer">
+  SELECT COUNT(*) FROM operate where vid=#{vid} and oper=#{oper};
+  </select>
+
+  <!-- 用户 公告-->
+  <select id="info" resultMap="teamsBaseResultMap">
+  select * from items where manage=#{manage}
+  <if test="oper !='' and oper != null">
+		 and oper=#{oper}
+		</if>
+	<if test="status !=0 and status != null">
+		 and status=#{status};
+		</if>
+  </select>
+  <!-- 用户举报 -->
+  <insert id="jubao">
+  insert into items (title,name,detail,manage,oper) values(#{title},#{name},#{detail},#{manage},#{oper});
+  </insert>
+  
+  <select id="ggxq" resultMap="teamsBaseResultMap" parameterType="Integer">
+  select * from items where id=#{id};
+  </select>
+  
+  <!-- 用户上传数目统计 -->
+  <select id="uploadnumber"  resultType="Integer">
+  select COUNT(*) from video where vuname=#{vuname} and status=1;
+  </select>
+  <!-- 用户点击视频数目统计 -->
+  <select id="uservideonumer"  resultMap="videoBaseResultMap">
+  select vid,vnumber,vname,image from video where status=1;
+  </select>
+   <!-- 用户点击视频 -->
+   <select id="uservnumber" resultType="Integer">
+   select vnumber from video where vid=#{vid};
+   </select>
+   <update id="updatevnumber">
+   update video set vnumber=#{vnumber} where vid=#{vid};
+   </update>
+  <!-- 用户点击和收藏视频 数目-->
+  <select id="userOpernb" resultType="Integer">
+  select COUNT(*) from operate where uname=#{uname} and oper=#{oper}
+  </select>
+  <!-- 记录收藏或者喜欢的视频-->
+  <select id="recordOper1" resultMap="operateBaseResultMap">
+  select operate.*,video.* from operate inner join video on operate.vid=video.vid where operate.uname=#{uname} and operate.oper=#{oper}
+  </select>
+  
+  </mapper>
